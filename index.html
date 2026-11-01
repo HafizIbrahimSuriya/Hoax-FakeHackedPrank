@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SYSTEM BREACHED</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  #hack{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+        color:#00ff00;font-family:'Courier New',Courier,monospace;text-align:center}
+  h1{font-size:3em;text-shadow:0 0 10px #00ff00;margin:.2em}
+  p{font-size:1.5em;margin:.4em}
+  .red{color:red;font-size:2em;animation:blinker 1s linear infinite}
+  @keyframes blinker{50%{opacity:0}}
+
+  #stage{position:fixed;inset:0;display:none;background:#000;overflow:hidden}
+  /* "cover" sizing: the 16:9 video always fills the whole page, no black bars */
+  #stage iframe,#stage video{
+    position:absolute;top:50%;left:50%;border:0;pointer-events:none;
+    width:max(100vw,177.78vh);height:max(100vh,56.25vw);
+    transform:translate(-50%,-50%) scale(1.12);   /* slight zoom hides YouTube's title bar */
+    object-fit:cover;
+  }
+  /* invisible shield: nobody can click the video, so no pause / play / controls */
+  #shield{position:absolute;inset:0;z-index:5;cursor:none;background:transparent}
+  #hint{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);z-index:6;color:#0f0;
+        font:16px 'Courier New',monospace;background:rgba(0,0,0,.6);padding:6px 14px;border-radius:6px;
+        pointer-events:none;transition:opacity .5s}
+</style>
+</head>
+<body>
+<div id="hack">
+  <h1>YOU HAVE BEEN HACKED</h1>
+  <p>By __NAME__</p>
+  <p class="red">UPLOADING YOUR FILES TO THE DARK WEB...</p>
+  <p>Wait... what is this video?</p>
+</div>
+
+<div id="stage">
+  <div id="yt"></div>
+  <div id="shield"></div>
+  <div id="hint">Click anywhere for sound + fullscreen</div>
+</div>
+
+<script>
+const CFG = __CONFIG__;   // {kind:"youtube", id:"..."} or {kind:"file", src:"..."}
+const stage = document.getElementById('stage');
+const hint  = document.getElementById('hint');
+let player = null, started = false, unlocked = false;
+
+const SID = Math.random().toString(36).slice(2,8);   // random per page load, not tied to the person
+function report(ev){
+  const u='/event?e='+ev+'&id='+SID;
+  try{ navigator.sendBeacon(u); }catch(e){ fetch(u,{method:'POST',keepalive:true}); }
+}
+report('opened');
+window.addEventListener('pagehide', ()=>report('left'));
+
+// After 4 seconds the video takes over this same page (no redirect to youtube.com)
+setTimeout(()=>{
+  document.getElementById('hack').style.display='none';
+  stage.style.display='block';
+  CFG.kind==='youtube' ? loadYouTube() : loadFile();
+}, 4000);
+
+function loadYouTube(){
+  const s=document.createElement('script');
+  s.src='https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+}
+window.onYouTubeIframeAPIReady = function(){
+  player = new YT.Player('yt',{
+    videoId: CFG.id,
+    host: 'https://www.youtube-nocookie.com',
+    playerVars:{autoplay:1,mute:1,controls:0,disablekb:1,fs:0,iv_load_policy:3,playsinline:1,
+                rel:0,modestbranding:1,loop:1,playlist:CFG.id},
+    events:{
+      onReady:e=>{e.target.mute();e.target.playVideo();},
+      onStateChange:e=>{
+        if(e.data===YT.PlayerState.PLAYING && !started){started=true;report('playing');}
+        if(e.data===YT.PlayerState.PAUSED){e.target.playVideo();}   // can never stay paused
+        if(e.data===YT.PlayerState.ENDED){report('ended');}
+      }
+    }
+  });
+};
+
+function loadFile(){
+  const v=document.createElement('video');
+  v.src=CFG.src; v.autoplay=true; v.muted=true; v.loop=true; v.playsInline=true; v.controls=false;
+  v.disablePictureInPicture=true; v.setAttribute('controlslist','nodownload nofullscreen noplaybackrate');
+  document.getElementById('yt').replaceWith(v);
+  player=v;
+  v.addEventListener('playing',()=>{ if(!started){started=true;report('playing');} });
+  v.addEventListener('pause',()=>v.play().catch(()=>{}));
+  v.addEventListener('ended',()=>report('ended'));
+  v.play().catch(()=>{});
+}
+
+// First real click / key / tap: sound on + fullscreen (browsers require a user gesture for both)
+function unlock(){
+  if(unlocked) return; unlocked=true;
+  hint.style.opacity=0;
+  if(CFG.kind==='youtube'){ if(player&&player.unMute){player.unMute();player.setVolume(100);player.playVideo();} }
+  else if(player){ player.muted=false; player.play(); }
+  const el=document.documentElement;
+  (el.requestFullscreen||el.mozRequestFullScreen||el.webkitRequestFullscreen||(()=>{})).call(el);
+}
+['click','keydown','touchstart'].forEach(t=>window.addEventListener(t,unlock));
+// block space / k (pause keys) just in case
+window.addEventListener('keydown',e=>{ if([' ','k','K'].includes(e.key)) e.preventDefault(); });
+</script>
+</body>
+</html>
