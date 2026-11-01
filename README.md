@@ -51,12 +51,12 @@
 **Windows**
 
 1. Download or clone this repo
-2. Double-click **`START-Windows.bat`**
+2. Double-click **`Hoax.bat`**
 
 **Linux / macOS**
 
 ```bash
-chmod +x START-Linux-Mac.sh
+chmod +x Hoax.sh
 ./START-Linux-Mac.sh
 ```
 
@@ -102,8 +102,8 @@ Answer the questions, then send the **Public** link from the terminal to your fr
 Hoax-FakeHackedPrank/
 ├── index.html            the fake hack page + fullscreen video
 ├── server.ps1            Windows server (built-in PowerShell)
-├── START-Windows.bat     Windows launcher
-├── START-Linux-Mac.sh    Linux / macOS launcher (server is inside)
+├── Hoax.bat              Windows launcher
+├── Hoax.sh               Linux / macOS launcher (server is inside)
 ├── assets/               README images
 └── README.md
 ```
